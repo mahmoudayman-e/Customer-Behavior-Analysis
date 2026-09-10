@@ -1,133 +1,88 @@
-📊 Data Analytics Project: End-to-End Data Analysis & Dashboarding
-📌 Overview
+# Customer Shopping Behavior & Segmentation - End-to-End Analytics Project
 
-This project demonstrates an end-to-end data analytics workflow, starting from loading raw data and ending with actionable insights visualized in a Power BI dashboard.
-The goal is to showcase practical skills in Python, SQL Server, and Power BI, including data exploration, cleaning, querying, and visualization.
+## 📌 Project Overview
+This repository features an advanced, end-to-end **Customer Shopping Behavior & Segmentation Analytics** solution. This project demonstrates a full data pipeline integration: leveraging **Python (Pandas)** for data engineering, cleaning, and database extraction, **MySQL** for comprehensive relational database auditing and analytical querying, and **Power BI** for producing an interactive executive dashboard.
 
-📂 Dataset
+The primary commercial objective is to diagnose customer purchasing frequency, evaluate demographic revenue contributions, measure subscription program performance, and isolate high-value buyer cohorts.
 
-The dataset contains structured data relevant to business analysis (e.g., sales, customers, reviews, or transactions).
+---
 
-Source: (Add source if public, or mention “Provided dataset”)
+## 🛠️ Technical Toolkit & Skills Demonstrated
+* **Data Engineering & ETL (Python):** Utilized `pandas` for categorical missing-value imputation (handling review ratings via category medians), string sanitization, and structured feature engineering (creating `age_group` brackets via `qcut` and numerical frequency mappings).
+* **Database Pipeline (SQLAlchemy & MySQL):** Configured automated database connections to write Python dataframes directly into MySQL, followed by authoring complex queries involving window functions (`ROW_NUMBER() OVER`), CTEs, subqueries, and multi-conditional logic.
+* **Business Intelligence (Power BI):** Engineered a high-impact, modern visual dashboard featuring custom KPIs, cohort retention metrics, and responsive sidebar segmentation slicers.
 
-Format: CSV / Excel
+---
 
-Size: (Optional)
+## 🐍 Phase 1: Data Engineering & Cleaning (Python)
+The raw shopping behavior records were processed inside a Jupyter Notebook to eliminate structural discrepancies and handle unrecorded data metrics before relational storage.
+```python
+# Imputing missing values in Review Rating based on product category median
+df['review_rating'] = df.groupby('category')['review_rating'].transform(lambda x: x.fillna(x.median()))
 
-🛠 Tools & Technologies
+# Engineering age group cohorts for localized demographic filtering
+labels = ['Young Adult', 'Adult', 'Middle-aged', 'Senior']
+df['age_group'] = pd.qcut(df['age'], q=4, labels=labels)
 
-Python (Pandas, NumPy, Matplotlib/Seaborn)
+# Dropping redundant columns based on multi-column logical equality tests
+df = df.drop('promo_code_used', axis=1)
+```
 
-SQL Server
+---
 
-Power BI
+## 🗄️ Phase 2: Relational Database Auditing (SQL Queries)
+Once cleaned, data was loaded into a MySQL database instance (`customer_behavior`) to build enterprise reporting views. Below are core queries demonstrating deep analytical metrics:
 
-Jupyter Notebook
+```sql
+-- 1. Identifying Premium Discounted Orders (Subqueries)
+SELECT customer_id, purchase_amount
+FROM customer
+WHERE discount_applied = 'Yes' 
+  AND purchase_amount >= (SELECT AVG(purchase_amount) FROM customer);
 
-SQL Server Management Studio (SSMS)
+-- 2. Customer Cohort Segmentation (CTEs & Conditional Brackets)
+WITH customer_type AS (
+    SELECT customer_id, previous_purchases,
+           CASE 
+               WHEN previous_purchases = 1 THEN 'NEW'
+               WHEN previous_purchases BETWEEN 2 AND 10 THEN 'Returning'
+               ELSE 'Loyal'
+           END AS customer_segment
+    FROM customer
+)
+SELECT customer_segment, COUNT(*) AS "Number of Customers"
+FROM customer_type
+GROUP BY customer_segment;
 
-🔄 Project Workflow
+-- 3. Top 3 Most Purchased Products Per Category (Window Functions)
+WITH item_counts AS (
+    SELECT category, item_purchased, COUNT(customer_id) AS total_orders,
+           ROW_NUMBER() OVER(PARTITION BY category ORDER BY COUNT(customer_id) DESC) AS item_rank
+    FROM customer
+    GROUP BY category, item_purchased
+)
+SELECT item_rank, category, item_purchased, total_orders
+FROM item_counts
+WHERE item_rank <= 3;
+```
 
-Load the dataset using Python
+---
 
-Perform Exploratory Data Analysis (EDA)
+## 📊 Phase 3: Executive Dashboard Layout (Power BI View)
+<img width="1173" height="633" alt="custmoer behavior" src="https://github.com/user-attachments/assets/cfa684fc-0a1a-4a50-a585-50ee15437172" />
 
-Clean and preprocess the data
+The visualization canvas turns verified records into high-level business insights using a distinct visual theme.
 
-Store cleaned data in SQL Server
-
-Run analytical SQL queries
-
-Build an interactive Power BI dashboard
-
-📊 Exploratory Data Analysis (EDA)
-
-Understanding data structure and data types
-
-Identifying missing values and duplicates
-
-Analyzing distributions and key metrics
-
-Detecting outliers and inconsistencies
-
-🧹 Data Cleaning
-
-Handling missing and null values
-
-Removing duplicates
-
-Fixing data type issues
-
-Cleaning text fields (e.g., trimming extra spaces)
-
-Preparing data for SQL and visualization
-
-🗄 SQL Analysis
-
-Imported cleaned data into SQL Server
-
-Wrote SQL queries to:
-
-Aggregate metrics (counts, averages, totals)
-
-Filter and segment data
-
-Support business-related questions
-
-Created optimized tables/views for reporting
-
-📈 Power BI Dashboard
-
-The Power BI dashboard provides:
-
-Key performance indicators (KPIs)
-
-Interactive filters and slicers
-
-Trend analysis and comparisons
-
-Clear visual storytelling for stakeholders
-
-(Optional: Add screenshot or mention key visuals)
-
-📌 Results & Insights
-
-Identified key trends and patterns in the data
-
-Highlighted important business metrics
-
-Enabled data-driven decision-making through visuals
-
-Delivered a clear and interactive reporting solution
-
-▶️ How to Run the Project
-
-Clone the repository:
-
-git clone https://github.com/mahmoudayman-e/Customer_Behavior_Analysis.git
+* **Core Corporate KPIs:** Houses 3 distinct cards summarizing absolute **Total Customers (3,900)**, **Average Purchase Amount (\$59.76)**, and **Average Review Rating (3.75)**.
+* **Subscription & Product Categories:** Leverages high-contrast donut charts to evaluate subscription penetration (27% Yes vs. 73% No) paired with clustered bar charts ranking global revenue and sales counts by category verticals (Clothing, Accessories, Footwear, Outerwear).
+* **Demographic Clusters:** Maps purchase volume density and dollar spending across horizontal charts explicitly broken down by age classifications (`Young Adult`, `Middle-aged`, `Adult`, `Senior`).
 
 
-Open the Jupyter Notebook and run the Python scripts for EDA and cleaning
 
-Load the cleaned dataset into SQL Server
 
-Execute the provided SQL queries
+---
 
-Open the Power BI file (.pbix) to explore the dashboard
-
-📁 Project Structure
-├── data/
-│   ├── raw_data.csv
-│   ├── cleaned_data.csv
-├── notebooks/
-│   ├── eda_and_cleaning.ipynb
-├── sql/
-│   ├── analysis_queries.sql
-├── powerbi/
-│   ├── dashboard.pbix
-├── README.md
-
-👤 Author
-
-Mahmoud Ayman
-Data Analytics Enthusiast | Python • SQL • Power BI
+## 🚀 Execution Instructions
+1. Navigate to your MySQL database to run the analytical queries on your schema.
+2. Open the compiled project file using **Power BI Desktop**.
+3. Interact with the vertical sidebar slicers to cross-filter across demographic or contract variables.
